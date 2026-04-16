@@ -101,16 +101,38 @@ else if (type == OBJ_TREE) type_str = "tree";
 else if (type == OBJ_COMMIT) type_str = "commit";
 else return -1;
 
-    char header[64];
-    int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len);
+char header[64];
+int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len);
 
-    size_t total_len = header_len + 1 + len;
-    char *buf = malloc(total_len);
-    if (!buf) return -1;
+size_t total_len = header_len + 1 + len;
+char *buf = malloc(total_len);
+if (!buf) return -1;
 
-    memcpy(buf, header, header_len);
-    buf[header_len] = '\0';
-    memcpy(buf + header_len + 1, data, len);
+memcpy(buf, header, header_len);
+buf[header_len] = '\0';
+memcpy(buf + header_len + 1, data, len);
+
+    compute_hash(buf, total_len, id_out);
+
+    if (object_exists(id_out)) {
+        free(buf);
+        return 0;
+    }
+
+    char hex[HASH_HEX_SIZE + 1];
+    hash_to_hex(id_out, hex);
+
+    char dir[512];
+    snprintf(dir, sizeof(dir), "%s/%.2s", OBJECTS_DIR, hex);
+
+    mkdir(dir, 0755); 
+
+    char final_path[512];
+    object_path(id_out, final_path, sizeof(final_path));
+
+    char temp_path[1024];
+    snprintf(temp_path, sizeof(temp_path), "%s/tmp", dir);
+
     
 (void)type; (void)data; (void)len; (void)id_out;
 return -1;
@@ -136,10 +158,3 @@ return -1;
 //   - memcmp             : comparing the computed hash against the requested hash
 //   - malloc, memcpy     : allocating and returning the extracted data
 //
-// The caller is responsible for calling free(*data_out).
-// Returns 0 on success, -1 on error (file not found, corrupt, etc.).
-int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
-// TODO: Implement
-(void)id; (void)type_out; (void)data_out; (void)len_out;
-return -1;
-}
