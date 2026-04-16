@@ -95,11 +95,22 @@ return access(path, F_OK) == 0;
 // Returns 0 on success, -1 on error.
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
 // TODO: Implement
-    const char *type_str;
-    if (type == OBJ_BLOB) type_str = "blob";
-    else if (type == OBJ_TREE) type_str = "tree";
-    else if (type == OBJ_COMMIT) type_str = "commit";
-    else return -1;
+const char *type_str;
+if (type == OBJ_BLOB) type_str = "blob";
+else if (type == OBJ_TREE) type_str = "tree";
+else if (type == OBJ_COMMIT) type_str = "commit";
+else return -1;
+
+    char header[64];
+    int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len);
+
+    size_t total_len = header_len + 1 + len;
+    char *buf = malloc(total_len);
+    if (!buf) return -1;
+
+    memcpy(buf, header, header_len);
+    buf[header_len] = '\0';
+    memcpy(buf + header_len + 1, data, len);
     
 (void)type; (void)data; (void)len; (void)id_out;
 return -1;
