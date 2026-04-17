@@ -198,10 +198,30 @@ fprintf(stderr, "error: tree_from_index failed\n");
 return -1;
 }
 
-    ObjectID parent;
-    int has_parent = (head_read(&parent) == 0);
+ObjectID parent;
+int has_parent = (head_read(&parent) == 0);
 
-    
+    Commit c = {0};
+
+    c.tree = tree;
+    if (has_parent) {
+        c.parent = parent;
+        c.has_parent = 1;
+    } else {
+        c.has_parent = 0;
+    }
+
+    const char *author_str = pes_author();
+    if (!author_str) author_str = "Unknown";
+
+    char author_line[256];
+    snprintf(author_line, sizeof(author_line), "%s <%ld@localhost>",
+             author_str, (long)time(NULL));
+    snprintf(c.author, sizeof(c.author), "%s", author_line);
+    c.timestamp = (uint64_t)time(NULL);
+
+    snprintf(c.message, sizeof(c.message), "%s", message);
+
+
 
 return 0;
-}
