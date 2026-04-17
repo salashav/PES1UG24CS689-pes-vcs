@@ -47,27 +47,59 @@ if (index->count == 0) printf("  (nothing to show)\n");
 return 0;
 }
 
-// ─── TODO (The Logic) ────────────────────────────────────────────────────────
 // ─── TODO 
 
 static int compare_index_entries(const void *a, const void *b) {
 return strcmp(((const IndexEntry *)a)->path, ((const IndexEntry *)b)->path);
-@@ -88,53 +88,4 @@
+}
+
+
+int index_load(Index *index) {
+if (!index) return -1;
+memset(index, 0, sizeof(Index));
+FILE *f = fopen(PES_INDEX_FILE, "r");
+if (!f) return 0; 
+
+char line[2048];
+while (fgets(line, sizeof(line), f) && index->count < MAX_INDEX_ENTRIES) {
+IndexEntry *e = &index->entries[index->count];
+char hex[HASH_HEX_SIZE + 1];
+unsigned int mode = 0, size = 0;
+unsigned long mtime = 0;
+char path_buf[1024] = {0};
+
+if (sscanf(line, "%o %64s %lu %u %1023s", &mode, hex, &mtime, &size, path_buf) == 5) {
+e->mode = mode;
+hex_to_hash(hex, &e->hash);
+e->mtime_sec = (uint64_t)mtime;
+e->size = (uint32_t)size;
+strncpy(e->path, path_buf, sizeof(e->path) - 1);
+index->count++;
+}
+}
+fclose(f);
+return 0;
+}
+
+int index_save(const Index *index) {
+if (!index) return -1;
+char tmp[512];
+snprintf(tmp, sizeof(tmp), "%s.tmp", PES_INDEX_FILE);
 FILE *f = fopen(tmp, "w");
 if (!f) return -1;
 
-    for (int i = 0; i < index->count; i++) {
-        char hex[HASH_HEX_SIZE + 1];
-        hash_to_hex(&index->entries[i].hash, hex);
-        fprintf(f, "%o %s %lu %u %s\n", 
-                index->entries[i].mode, hex, 
-                (unsigned long)index->entries[i].mtime_sec, 
-                (unsigned int)index->entries[i].size, 
-                index->entries[i].path);
-    }
-    fclose(f);
-    rename(tmp, PES_INDEX_FILE);
-    return 0;
+for (int i = 0; i < index->count; i++) {
+char hex[HASH_HEX_SIZE + 1];
+hash_to_hex(&index->entries[i].hash, hex);
+fprintf(f, "%o %s %lu %u %s\n", 
+index->entries[i].mode, hex, 
+(unsigned long)index->entries[i].mtime_sec, 
+(unsigned int)index->entries[i].size, 
+index->entries[i].path);
+}
+fclose(f);
+rename(tmp, PES_INDEX_FILE);
+return 0;
 }
 
 int index_add(Index *index, const char *path) {
@@ -80,29 +112,5 @@ int index_add(Index *index, const char *path) {
     if (st.st_size > 0) fread(data, 1, st.st_size, f);
     fclose(f);
 
-    ObjectID bid;
-    object_write(OBJ_BLOB, data, st.st_size, &bid);
-    free(data);
-
-    // Manual find to avoid undefined reference if index_find is missing
-    IndexEntry *e = NULL;
-    for (int i = 0; i < index->count; i++) {
-        if (strcmp(index->entries[i].path, path) == 0) {
-            e = &index->entries[i];
-            break;
-        }
-    }
-
-    if (!e) {
-        if (index->count >= MAX_INDEX_ENTRIES) return -1;
-        e = &index->entries[index->count++];
-        strncpy(e->path, path, sizeof(e->path) - 1);
-    }
-
-    e->mode = get_file_mode(path);
-    e->hash = bid;
-    e->mtime_sec = (uint64_t)st.st_mtime;
-    e->size = (uint32_t)st.st_size;
-
-    return index_save(index);
+    
 }
