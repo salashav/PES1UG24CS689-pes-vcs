@@ -139,7 +139,8 @@ tree.count = 0;
 
 struct dirent *entry;
 while ((entry = readdir(dir)) != NULL && tree.count < MAX_TREE_ENTRIES) {
-/* Skip . and .. and .pes */
+        /* Skip . and .. and .pes */
+
 if (strcmp(entry->d_name, ".") == 0 ||
 strcmp(entry->d_name, "..") == 0 ||
 strcmp(entry->d_name, ".pes") == 0) {
@@ -147,38 +148,52 @@ continue;
 }
 
 TreeEntry *te = &tree.entries[tree.count];
+
+
 te->mode = get_file_mode(entry->d_name);
+        
+        if (te->mode == MODE_DIR) continue;
+
 snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
+    
+
 
 FILE *f = fopen(entry->d_name, "rb");
 if (!f) continue;
+        
 
 fseek(f, 0, SEEK_END);
 long size = ftell(f);
 rewind(f);
+        
+        if (size <= 0) {
+            fclose(f);
+            continue;
+        }
 
 void *data = malloc(size);
+        if (!data) {
+          fclose(f);
+          closedir(dir);
+          return -1;
+        }
+
 fread(data, 1, size, f);
+        
+        
 fclose(f);
+
+
 if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
 free(data);
 closedir(dir);
 return -1;
 }
+
 free(data);
 tree.count++;
 }
+    
 
 closedir(dir);
 
-    /* Serialize tree */
-
-void *data;
-size_t len;
-if (tree_serialize(&tree, &data, &len) < 0) return -1;
-
-    /* Write tree object */
-
-if (object_write(OBJ_TREE, data, len, id_out) < 0) {
-free(data);
-return -1;
