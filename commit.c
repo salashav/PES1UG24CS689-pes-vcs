@@ -222,14 +222,22 @@ c.timestamp = (uint64_t)time(NULL);
 
 snprintf(c.message, sizeof(c.message), "%s", message);
 
-    
-    void *data = NULL;
-    size_t len = 0;
-    if (commit_serialize(&c, &data, &len) != 0) {
-        fprintf(stderr, "error: commit_serialize failed\n");
+void *data = NULL;
+size_t len = 0;
+if (commit_serialize(&c, &data, &len) != 0) {
+fprintf(stderr, "error: commit_serialize failed\n");
+return -1;
+}
+
+
+    if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0) {
+        fprintf(stderr, "error: object_write(OBJ_COMMIT) failed\n");
+        free(data);
         return -1;
     }
 
-    
+    free(data);
+
+
 return 0;
 }
