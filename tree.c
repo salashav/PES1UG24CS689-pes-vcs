@@ -147,21 +147,24 @@ continue;
 }
 
 TreeEntry *te = &tree.entries[tree.count];
-    te->mode = get_file_mode(entry->d_name);
-    snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
-        te->mode = get_file_mode(entry->d_name);
-        snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
-    
-        FILE *f = fopen(entry->d_name, "rb");
-        if (!f) continue;
+te->mode = get_file_mode(entry->d_name);
+snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
 
-        fseek(f, 0, SEEK_END);
-        long size = ftell(f);
-        rewind(f);
+FILE *f = fopen(entry->d_name, "rb");
+if (!f) continue;
 
-        void *data = malloc(size);
-        fread(data, 1, size, f);
-        fclose(f);
+fseek(f, 0, SEEK_END);
+long size = ftell(f);
+rewind(f);
+
+void *data = malloc(size);
+fread(data, 1, size, f);
+fclose(f);
+        if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
+            free(data);
+            closedir(dir);
+            return -1;
+        }
 
 return 0;
 }
