@@ -179,25 +179,34 @@ return 0;
 // The caller is responsible for calling free(*data_out).
 // Returns 0 on success, -1 on error (file not found, corrupt, etc.).
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
-    // TODO: Implement
-    (void)id; (void)type_out; (void)data_out; (void)len_out;
-    return -1;
-    char path[512];
-    object_path(id, path, sizeof(path));
+char path[512];
+object_path(id, path, sizeof(path));
 
-    int fd = open(path, O_RDONLY);
-    if (fd < 0) return -1;
+int fd = open(path, O_RDONLY);
+if (fd < 0) return -1;
 
-    struct stat st;
-    fstat(fd, &st);
+struct stat st;
+fstat(fd, &st);
 
-    size_t size = st.st_size;
-    char *buf = malloc(size);
-    if (!buf) { close(fd); return -1; }
+size_t size = st.st_size;
+char *buf = malloc(size);
+if (!buf) { close(fd); return -1; }
 
-    read(fd, buf, size);
-    close(fd);
+read(fd, buf, size);
+close(fd);
+
+ObjectID computed;
+compute_hash(buf, size, &computed);
     
-    ObjectID computed;
-    compute_hash(buf, size, &computed);
+    if (memcmp(&computed, id, sizeof(ObjectID)) != 0) {
+        free(buf);
+        return -1;
+    }
+
+    char *sep = memchr(buf, '\0', size);
+    if (!sep) { free(buf); return -1; }
+
+    char type_str[16];
+    size_t len;
+    sscanf(buf, "%15s %zu", type_str, &len);
 }
