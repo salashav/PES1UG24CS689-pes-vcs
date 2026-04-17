@@ -149,6 +149,19 @@ continue;
 TreeEntry *te = &tree.entries[tree.count];
     te->mode = get_file_mode(entry->d_name);
     snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
+        te->mode = get_file_mode(entry->d_name);
+        snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
+    
+        FILE *f = fopen(entry->d_name, "rb");
+        if (!f) continue;
+
+        fseek(f, 0, SEEK_END);
+        long size = ftell(f);
+        rewind(f);
+
+        void *data = malloc(size);
+        fread(data, 1, size, f);
+        fclose(f);
 
 return 0;
 }
