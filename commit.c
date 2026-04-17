@@ -230,14 +230,19 @@ return -1;
 }
 
 
-    if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0) {
-        fprintf(stderr, "error: object_write(OBJ_COMMIT) failed\n");
-        free(data);
+if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0) {
+fprintf(stderr, "error: object_write(OBJ_COMMIT) failed\n");
+free(data);
+return -1;
+}
+
+free(data);
+
+    
+    if (head_update(commit_id_out) != 0) {
+        fprintf(stderr, "error: head_update failed\n");
         return -1;
     }
-
-    free(data);
-
 
 return 0;
 }
