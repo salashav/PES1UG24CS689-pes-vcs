@@ -112,18 +112,28 @@ void *data = malloc(st.st_size + 1);
 if (st.st_size > 0) fread(data, 1, st.st_size, f);
 fclose(f);
 
-    
-    ObjectID bid;
-    object_write(OBJ_BLOB, data, st.st_size, &bid);
-    free(data);
+ObjectID bid;
+object_write(OBJ_BLOB, data, st.st_size, &bid);
+free(data);
 
-    IndexEntry *e = NULL;
-    for (int i = 0; i < index->count; i++) {
-        if (strcmp(index->entries[i].path, path) == 0) {
-            e = &index->entries[i];
-            break;
-        }
+IndexEntry *e = NULL;
+for (int i = 0; i < index->count; i++) {
+if (strcmp(index->entries[i].path, path) == 0) {
+e = &index->entries[i];
+break;
+}
+}
+
+    if (!e) {
+        if (index->count >= MAX_INDEX_ENTRIES) return -1;
+        e = &index->entries[index->count++];
+        strncpy(e->path, path, sizeof(e->path) - 1);
     }
 
+    e->mode = get_file_mode(path);
+    e->hash = bid;
+    e->mtime_sec = (uint64_t)st.st_mtime;
+    e->size = (uint32_t)st.st_size;
 
+    return index_save(index);
 }
