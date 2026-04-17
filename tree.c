@@ -160,11 +160,25 @@ rewind(f);
 void *data = malloc(size);
 fread(data, 1, size, f);
 fclose(f);
-        if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
-            free(data);
-            closedir(dir);
-            return -1;
-        }
-
-return 0;
+if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
+free(data);
+closedir(dir);
+return -1;
 }
+free(data);
+tree.count++;
+}
+
+closedir(dir);
+
+    /* Serialize tree */
+
+void *data;
+size_t len;
+if (tree_serialize(&tree, &data, &len) < 0) return -1;
+
+    /* Write tree object */
+
+if (object_write(OBJ_TREE, data, len, id_out) < 0) {
+free(data);
+return -1;
