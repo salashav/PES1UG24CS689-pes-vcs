@@ -103,14 +103,27 @@ return 0;
 }
 
 int index_add(Index *index, const char *path) {
-    struct stat st;
-    if (stat(path, &st) != 0) return -1;
+struct stat st;
+if (stat(path, &st) != 0) return -1;
 
-    FILE *f = fopen(path, "rb");
-    if (!f) return -1;
-    void *data = malloc(st.st_size + 1);
-    if (st.st_size > 0) fread(data, 1, st.st_size, f);
-    fclose(f);
+FILE *f = fopen(path, "rb");
+if (!f) return -1;
+void *data = malloc(st.st_size + 1);
+if (st.st_size > 0) fread(data, 1, st.st_size, f);
+fclose(f);
 
     
+    ObjectID bid;
+    object_write(OBJ_BLOB, data, st.st_size, &bid);
+    free(data);
+
+    IndexEntry *e = NULL;
+    for (int i = 0; i < index->count; i++) {
+        if (strcmp(index->entries[i].path, path) == 0) {
+            e = &index->entries[i];
+            break;
+        }
+    }
+
+
 }
